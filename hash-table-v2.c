@@ -33,7 +33,10 @@ struct hash_table_v2 *hash_table_v2_create()
 		struct hash_table_entry *entry = &hash_table->entries[i];
 		SLIST_INIT(&entry->list_head);
 		int err = pthread_mutex_init(&entry->v2_bucket_lock, NULL);
-        handle_pthread_error(err, "pthread_mutex_init");
+        if (err != 0) {
+			fprintf(stderr, "pthread_mutex_init error: %d\n", err);
+			exit(EXIT_FAILURE);
+		}
 	}
 	return hash_table;
 }
@@ -72,31 +75,36 @@ bool hash_table_v2_contains(struct hash_table_v2 *hash_table,
 	return list_entry != NULL;
 }
 
-void hash_table_v2_add_entry(struct hash_table_v2 *hash_table,
-                             const char *key,
-                             uint32_t value)
+void hash_table_v2_add_entry(struct hash_table_v2 *hash_table, const char *key, uint32_t value)
 {
-	struct hash_table_entry *hash_table_entry = get_hash_table_entry(hash_table, key);
-	int err = pthread_mutex_lock(&hash_table_entry->v2_bucket_lock);
-    handle_pthread_error(err, "pthread_mutex_lock");
-	struct list_head *list_head = &hash_table_entry->list_head;
-	struct list_entry *list_entry = get_list_entry(hash_table, key, list_head);
+    struct hash_table_entry *hash_table_entry = get_hash_table_entry(hash_table, key);
+    struct list_head *list_head = &hash_table_entry->list_head;
+    struct list_entry *list_entry = get_list_entry(hash_table, key, list_head);
 
-	/* Update the value if it already exists */
-	if (list_entry != NULL) {
-		list_entry->value = value;
-		err = pthread_mutex_unlock(&hash_table_entry->v2_bucket_lock);
-        handle_pthread_error(err, "pthread_mutex_unlock");
-		return;
-	}
+    if (list_entry != NULL) {
+        list_entry->value = value;
+        return;
+    } 
 
-	list_entry = calloc(1, sizeof(struct list_entry));
-	list_entry->key = key;
-	list_entry->value = value;
-	SLIST_INSERT_HEAD(list_head, list_entry, pointers);
-	err = pthread_mutex_unlock(&hash_table_entry->v2_bucket_lock);
-    handle_pthread_error(err, "pthread_mutex_unlock");
+    int err = pthread_mutex_lock(&hash_table_entry->v2_bucket_lock);
+    if (err != 0) {
+        fprintf(stderr, "pthread_mutex_lock error: %d\n", err);
+        exit(EXIT_FAILURE);
+    }
+
+    list_entry = calloc(1, sizeof(struct list_entry));
+    assert(list_entry != NULL);
+    list_entry->key = key;
+    list_entry->value = value;
+    SLIST_INSERT_HEAD(list_head, list_entry, pointers);
+
+    err = pthread_mutex_unlock(&hash_table_entry->v2_bucket_lock);
+    if (err != 0) {
+        fprintf(stderr, "pthread_mutex_unlock error: %d\n", err);
+        exit(EXIT_FAILURE);
+    }
 }
+
 
 uint32_t hash_table_v2_get_value(struct hash_table_v2 *hash_table,
                                  const char *key)
@@ -120,7 +128,10 @@ void hash_table_v2_destroy(struct hash_table_v2 *hash_table)
 			free(list_entry);
 		}
 		int err = pthread_mutex_destroy(&entry->v2_bucket_lock);
-        handle_pthread_error(err, "pthread_mutex_destroy");
+        if (err != 0) {
+        fprintf(stderr, "pthread_mutex_destroy error: %d\n", err);
+        exit(EXIT_FAILURE);
+    }
 	}
 	free(hash_table);
 }

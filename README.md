@@ -33,7 +33,7 @@ Hash table base: 1,037,564 usec
 Hash table v1: 1,499,786 usec
   - 0 missing
 ```
-Version 1 is a little slower than the base version. The reasoning for this implementations slower performance than the base is because using multiple threads with a single lock can be slower than using a single thread with no locks because the overhead of acquiring and releasing the lock can introduce significant delays, especially when contention is high. When multiple threads compete for the same lock, they spend time waiting to acquire the lock, causing context switching and synchronization overhead, which can outweigh the benefits of parallelism, resulting in poorer performance compared to a single-threaded approach without locking.
+Version 1 is a little slower than the base version. The reasoning for this implementations slower performance than the base is because using multiple threads with a single lock can be slower than using a single thread with no locks due to the overhead of acquiring and releasing the lock introuducing significant delays, especially when contention is high. When multiple threads compete for the same lock, they spend time waiting to acquire the lock, causing context switching and synchronization overhead, which can outweigh the benefits of parallelism, resulting in poorer performance compared to a single-threaded approach without locking.
 
 
 ## Second Implementation
@@ -49,7 +49,7 @@ Hash table base: 1,132,411 usec
   - 0 missing
 Hash table v1: 1,630,872 usec
   - 0 missing
-Hash table v2: 377,667 usec
+Hash table v2: 357,667 usec
   - 0 missing
 ```
 
